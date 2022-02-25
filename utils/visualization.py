@@ -42,7 +42,7 @@ def draw_radial_network(network):
     stobj = [
       {'style': [{'css': {
           'background-color': 'white',
-          'shape': 'rectangle',
+          'shape': 'circle',
           'width': 600,
           'height': 400,
           'border-color': 'rgb(0,0,0)',
