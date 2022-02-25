@@ -16,7 +16,7 @@ dependencies:
   - MDAnalysis
   - nglview
   - openff-forcefields
-  - openff-toolkits
+  - openff-toolkit
   - openmmforcefields
   - openmmtools
   - pymbar
