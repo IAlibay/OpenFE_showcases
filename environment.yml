@@ -15,6 +15,7 @@ dependencies:
   - mdtraj
   - MDAnalysis
   - nglview
+  - notebook
   - openff-forcefields
   - openff-toolkit
   - openmmforcefields
