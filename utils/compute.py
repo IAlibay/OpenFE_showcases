@@ -1,6 +1,5 @@
 # A copy of Perses' perses.app.setup_relative_calculation.get_openmm_platform
 
-
 def get_openmm_platform(platform_name=None):
     """
     Return OpenMM's platform object based on given name. Setting to mixed

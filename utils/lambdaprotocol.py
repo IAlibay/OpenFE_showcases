@@ -11,6 +11,10 @@ from openmmtools.alchemy import AlchemicalState
 class LambdaProtocol(object):
     """Protocols for perturbing each of the compent energy terms in alchemical
     free energy simulations.
+
+    TODO
+    ----
+    * Class needs cleaning up and made more consistent
     """
 
     default_functions = {'lambda_sterics_core':
@@ -35,7 +39,7 @@ class LambdaProtocol(object):
 
     # lambda components for each component,
     # all run from 0 -> 1 following master lambda
-    def __init__(self, functions='default', windows=10):
+    def __init__(self, functions='default', windows=10, lambda_schedule=None):
         """Instantiates lambda protocol to be used in a free energy
         calculation. Can either be user defined, by passing in a dict, or using
         one of the pregenerated sets by passing in a string 'default', 'namd'
@@ -73,11 +77,28 @@ class LambdaProtocol(object):
         windows : int
             Number of windows which this lambda schedule is intended to be used
             with. This value is used to validate the lambda function.
+        lambda_schedule : list of floats
+            Schedule of lambda windows to be sampled. If ``None`` will default
+            to a linear spacing of windows as defined by
+            ``np.linspace(0. ,1. ,windows)``. Default ``None``.
 
-        Returns
-        -------
+        Attributes
+        ----------
+        functions : dict
+            Lambda protocol to be used.
+        lambda_schedule : list
+            Schedule of windows to be sampled.
         """
         self.functions = copy.deepcopy(functions)
+
+        # set the lambda schedule
+        self.lambda_schedule = self._validate_schedule(lambda_schedule,
+                                                       windows)
+        if lambda_schedule:
+            self.lambda_schedule = lambda_schedule
+        else:
+            self.lambda_schedule = np.linspace(0., 1., windows)
+
         if type(self.functions) == dict:
             self.type = 'user-defined'
         elif type(self.functions) == str:
@@ -123,8 +144,48 @@ class LambdaProtocol(object):
                 errmsg = f"LambdaProtocol type : {self.type} not recognised "
                 raise ValueError(errmsg)
 
-        self._validate_functions()
+        self._validate_functions(n=windows)
         self._check_for_naked_charges()
+
+    @staticmethod
+    def _validate_schedule(schedule, windows):
+        """
+        Checks that the input lambda schedule is valid.
+
+        Rules are:
+          - Must begin at 0 and end at 1
+          - Must be monotonically increasing
+
+        Parameters
+        ----------
+        schedule : list of floats
+            The lambda schedule. If ``None`` the method returns
+            ``np.linspace(0. ,1. ,windows)``.
+        windows : int
+            Number of windows to be sampled.
+
+        Returns
+        -------
+        schedule : list of floats
+            A valid lambda schedule.
+        """
+        if schedule is None:
+            return np.linspace(0., 1., windows)
+
+        # Check end states
+        if schedule[0] != 0 or schedule[-1] != 1:
+            errmsg = ("end and start lambda windows must be lambda 0 and 1 "
+                      "respectively")
+            raise ValueError(errmsg)
+
+        # Check monotonically increasing
+        difference = np.diff(schedule)
+
+        if not all(i >= 0. for i in difference):
+            errmsg = "The lambda schedule is not monotonic"
+            raise ValueError(errmsg)
+
+        return schedule
 
     def _validate_functions(self, n=10):
         """Ensures that all the lambda functions adhere to the rules:
@@ -142,7 +203,7 @@ class LambdaProtocol(object):
 
         for function in required_functions:
             if function not in self.functions:
-                # IA switching from warn to error here
+                # IA switched from warn to error here
                 errmsg = (f"function {function} is missing from "
                           "self.lambda_functions.")
                 raise ValueError(errmsg)
@@ -164,14 +225,14 @@ class LambdaProtocol(object):
                         "typically expected.")
                 warnings.warn(wmsg)
 
-    def _check_for_naked_charges(self, n=10):
+    def _check_for_naked_charges(self):
         """
         Checks that there are no cases where atoms have charge but no sterics.
 
         This avoids issues with singularities and/or excessive forces near
         the end states (even when using softcore electrostatics).
         """
-        global_lambda = np.linspace(0., 1., n)
+        global_lambda = self.lambda_schedule
 
         def check_overlap(ele, sterics, global_lambda, functions, endstate):
             for lam in global_lambda:
@@ -197,20 +258,21 @@ class LambdaProtocol(object):
     def get_functions(self):
         return self.functions
 
-    def plot_functions(self, n=50):
+    def plot_functions(self, lambda_schedule=None):
         """
         Plot the function for ease of visualisation.
 
         Parameters
         ----------
-        n : int
-            Number of lambda windows to plot along the function.
+        shedule : np.ndarray
+            The lambda schedule to plot the function along. If ``None`` plot
+            the one stored within this class. Default ``None``.
         """
         import matplotlib.pyplot as plt
 
         fig = plt.figure(figsize=(10, 5))
 
-        global_lambda = np.linspace(0., 1., n)
+        global_lambda = lambda_schedule if lambda_schedule else self.lambda_schedule
 
         for f in self.functions:
             plt.plot(global_lambda,
