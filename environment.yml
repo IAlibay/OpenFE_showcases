@@ -1,0 +1,27 @@
+name: openfe-showcase
+channels:
+  - conda-forge
+dependencies:
+  - numpy
+  - networkx
+  - rdkit
+  - pip
+  - pytest
+  - pytest-xdist
+  - pytest-cov
+  - coverage
+  - openff-toolkit
+  - click
+  - mdtraj
+  - MDAnalysis
+  - nglview
+  - openff-forcefields
+  - openff-toolkits
+  - openmmforcefields
+  - openmmtools
+  - pymbar
+  - pip:
+    - git+https://github.com/OpenFreeEnergy/Lomap@main
+    - plugcli
+    - cyjupyter
+    - git+https://github.com/OpenFreeEnergy/openfe
